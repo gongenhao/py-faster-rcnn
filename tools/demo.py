@@ -14,6 +14,8 @@ See README.md for installation instructions before running.
 """
 
 import _init_paths
+import matplotlib
+matplotlib.use('Agg')
 from fast_rcnn.config import cfg
 from fast_rcnn.test import im_detect
 from fast_rcnn.nms_wrapper import nms
@@ -95,7 +97,10 @@ def demo(net, image_name):
                           cls_scores[:, np.newaxis])).astype(np.float32)
         keep = nms(dets, NMS_THRESH)
         dets = dets[keep, :]
-        vis_detections(im, cls, dets, thresh=CONF_THRESH)
+        inds = np.where(dets[:, -1] >= CONF_THRESH)[0]
+        dets = dets[inds, :]
+        print(cls, dets)
+        #vis_detections(im, cls, dets, thresh=CONF_THRESH)
 
 def parse_args():
     """Parse input arguments."""
