@@ -55,7 +55,11 @@ def locate_cuda():
             raise EnvironmentError('The CUDA %s path could not be located in %s' % (k, v))
 
     return cudaconfig
-CUDA = locate_cuda()
+try:
+    CUDA = locate_cuda()
+except:
+    CUDA = None
+    print("No CODA detected")
 
 
 # Obtain the numpy include directory.  This logic works across numpy versions.
@@ -121,32 +125,36 @@ ext_modules = [
         ["nms/cpu_nms.pyx"],
         extra_compile_args={'gcc': ["-Wno-cpp", "-Wno-unused-function"]},
         include_dirs = [numpy_include]
-    ),
-    Extension('nms.gpu_nms',
-        ['nms/nms_kernel.cu', 'nms/gpu_nms.pyx'],
-        library_dirs=[CUDA['lib64']],
-        libraries=['cudart'],
-        language='c++',
-        runtime_library_dirs=[CUDA['lib64']],
-        # this syntax is specific to this build system
-        # we're only going to use certain compiler args with nvcc and not with
-        # gcc the implementation of this trick is in customize_compiler() below
-        extra_compile_args={'gcc': ["-Wno-unused-function"],
-                            'nvcc': ['-arch=sm_30',
-                                     '--ptxas-options=-v',
-                                     '-c',
-                                     '--compiler-options',
-                                     "'-fPIC'"]},
-        include_dirs = [numpy_include, CUDA['include']]
-    ),
+    )]
+if CUDA is not None:
+    ext_modules.append(
+        Extension('nms.gpu_nms',
+            ['nms/nms_kernel.cu', 'nms/gpu_nms.pyx'],
+            library_dirs=[CUDA['lib64']],
+            libraries=['cudart'],
+            language='c++',
+            runtime_library_dirs=[CUDA['lib64']],
+            # this syntax is specific to this build system
+            # we're only going to use certain compiler args with nvcc and not with
+            # gcc the implementation of this trick is in customize_compiler() below
+            extra_compile_args={'gcc': ["-Wno-unused-function"],
+                                'nvcc': ['-arch=sm_30',
+                                         '--ptxas-options=-v',
+                                         '-c',
+                                         '--compiler-options',
+                                         "'-fPIC'"]},
+            include_dirs = [numpy_include, CUDA['include']]
+        )
+    )
+ext_modules.append(
     Extension(
         'pycocotools._mask',
         sources=['pycocotools/maskApi.c', 'pycocotools/_mask.pyx'],
         include_dirs = [numpy_include, 'pycocotools'],
         extra_compile_args={
             'gcc': ['-Wno-cpp', '-Wno-unused-function', '-std=c99']},
-    ),
-]
+    )
+)
 
 setup(
     name='fast_rcnn',
