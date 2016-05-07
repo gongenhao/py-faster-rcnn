@@ -6,10 +6,14 @@
 # --------------------------------------------------------
 
 from fast_rcnn.config import cfg
-from nms.gpu_nms import gpu_nms
+try:
+	from nms.gpu_nms import gpu_nms
+	force_cpu=False
+except:
+	force_cpu=False
 from nms.cpu_nms import cpu_nms
 
-def nms(dets, thresh, force_cpu=False):
+def nms(dets, thresh, force_cpu=force_cpu):
     """Dispatch to either CPU or GPU NMS implementations."""
 
     if dets.shape[0] == 0:
